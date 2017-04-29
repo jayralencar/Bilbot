@@ -1,0 +1,120 @@
+#include <QTRSensors.h>
+#include <AFMotor.h>
+
+AF_DCMotor direito(1); 
+AF_DCMotor esquerdo(2); 
+
+#define QUANT_SENSORS             5  /* Defined amount of sensors. */
+#define QUANT_SAMPLES_PER_SENSOR  4  /* sample mean by analog readings of each sensor */
+#define sensorLinePin0 8
+#define sensorLinePin1 9
+#define sensorLinePin2 10
+#define sensorLinePin3 11
+#define sensorLinePin4 12
+QTRSensorsAnalog qtra((unsigned char[]) {
+  sensorLinePin0, sensorLinePin1, sensorLinePin2, sensorLinePin3, sensorLinePin4
+}, QUANT_SENSORS, QUANT_SAMPLES_PER_SENSOR, QTR_NO_EMITTER_PIN);
+unsigned int sensorValues[QUANT_SENSORS];
+
+float last_kp;
+float ki;
+bool motorLigado = false;
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  pinMode(21, OUTPUT);
+  calibration();
+  printCalibration();
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  unsigned int position = qtra.readLine(sensorValues);
+  int pos = position - 2000;
+  // The proportional term must be 0 when we are in line
+  float kp = ((int)pos);
+  
+  // Calculates the derivative term (change) and the ki term (sum) of the position
+  float kd = kp - last_kp;
+  ki += kp;
+
+  // Remembering the last position
+  last_kp = kp;
+
+  Serial.print(kp);
+  Serial.print("\t");
+  Serial.print(ki);
+  Serial.print("\t");
+  Serial.println(kd);
+  
+  
+  /**
+     It computes the difference between the power of the two motors Aranjo
+       * M1 - M2. If a positive number, the robot will turn to
+       * Right. If it is a negative number, the robot will turn left
+       * And magnetude of numbers determine the acuteness with which will make the curves / turns
+  */
+  float power_difference = kp / 12 + ki / 10000 + kd * 4 / 2;
+
+  /**
+     Calculates the current configuration of the engines. We will never set
+       * A motor with a negative value
+  */
+  const int max_speed = 100;
+
+  if (power_difference > max_speed) power_difference = max_speed;
+  if (power_difference < -max_speed) power_difference = -max_speed;
+
+  if (power_difference < 0)
+    motorMove(max_speed + power_difference, max_speed);
+  else
+    motorMove(max_speed, max_speed - power_difference);
+}
+
+void calibration(){
+  digitalWrite(21,1);
+  motorMove(115, -115);
+  for(int i = 0 ; i < 75; i++){
+    qtra.calibrate();  
+  }
+  motorStop();
+  for (int i = 0; i < QUANT_SENSORS; i++)
+  {
+    Serial.print(qtra.calibratedMinimumOn[i]);
+    Serial.print(' ');
+  }
+  Serial.println();
+  digitalWrite(21,0);
+}
+
+void motorMove(int left, int rigth){
+  direito.setSpeed(rigth > 0 ? rigth : (rigth * -1));
+  esquerdo.setSpeed(left > 0 ? left : (left * -1));
+  direito.run(rigth > 0 ? FORWARD : BACKWARD);
+  esquerdo.run(left > 0 ? FORWARD : BACKWARD);
+}
+
+void motorStop(){
+  direito.run(RELEASE);
+  esquerdo.run(RELEASE);  
+}
+void printCalibration() {
+
+  Serial.println(">>>>>| Calibração de Sensores IR. |<<<<<");
+
+  /* Displays MIN valore obtained. */
+  for (int i = 0; i < QUANT_SENSORS; i++) {
+    Serial.print(qtra.calibratedMinimumOn[i]);
+    Serial.print(' ');
+  }
+  Serial.println();
+
+  /* Displays MAX obitidos values. */
+  for (int i = 0; i < QUANT_SENSORS; i++) {
+    Serial.print(qtra.calibratedMaximumOn[i]);
+    Serial.print(' ');
+  }
+  Serial.println();
+  Serial.println("---------------------------------------");
+}
