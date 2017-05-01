@@ -1,5 +1,10 @@
 #include <QTRSensors.h>
 #include <AFMotor.h>
+#include <Vcc.h>
+
+const float VccExpected   = 9.6;
+const float VccCorrection = 2.860/2.92;  // Measured Vcc by multimeter divided by reported Vcc
+Vcc vcc(VccCorrection);
 
 AF_DCMotor direito(1); 
 AF_DCMotor esquerdo(2); 
@@ -98,8 +103,9 @@ void pid2(){
 
 void calibration(){
   digitalWrite(21,1);
-  motorMove(100, -100);
-  for(int i = 0 ; i < 80; i++){
+  int batteryPcnt = (int)vcc.Read_Perc(VccExpected);
+  motorMove(115, -115);
+  for(int i = 0 ; i < 100 - batteryPcnt ; i++){
     qtra.calibrate();  
   }
 //  delay(20);
