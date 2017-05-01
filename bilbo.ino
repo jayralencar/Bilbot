@@ -4,8 +4,8 @@
 AF_DCMotor direito(1); 
 AF_DCMotor esquerdo(2); 
 
-#define QUANT_SENSORS             5  /* Defined amount of sensors. */
-#define QUANT_SAMPLES_PER_SENSOR  2  /* sample mean by analog readings of each sensor */
+#define QUANT_SENSORS             7  /* Defined amount of sensors. */
+#define QUANT_SAMPLES_PER_SENSOR  4  /* sample mean by analog readings of each sensor */
 #define sensorLinePin0 8
 #define sensorLinePin1 9
 #define sensorLinePin2 10
@@ -14,16 +14,17 @@ AF_DCMotor esquerdo(2);
 
 
 QTRSensorsAnalog qtra((unsigned char[]) {
-  sensorLinePin0, sensorLinePin1, sensorLinePin2, sensorLinePin3, sensorLinePin4
+  sensorLinePin0, sensorLinePin1, sensorLinePin2, sensorLinePin3, sensorLinePin4,13,14
 }, QUANT_SENSORS, QUANT_SAMPLES_PER_SENSOR, QTR_NO_EMITTER_PIN);
 unsigned int sensorValues[QUANT_SENSORS];
 
+int contador = 0;
 float last_kp;
 float ki;
 bool motorLigado = false;
 int lastError = 0;
 
-int sensores[QUANT_SENSORS] = {8,9,10,11,12};
+int sensores[QUANT_SENSORS] = {8,9,10,11,12,13,14};
 
 void setup() {
   // put your setup code here, to run once:
@@ -38,17 +39,20 @@ void pid1(){
   unsigned int position = qtra.readLine(sensorValues);
 
   
-  float kp = ((int)position) - 2000;
+  float kp = ((int)position) - 3000;
   kp = kp/2;
   Serial.print(kp);
   float kd = kp - last_kp;
   ki += kp;
 
+  
+
+
   // Remembering the last position
   last_kp = kp;
 
-//  float power_difference = kp / 10 + ki / 10000 + kd * 3 / 2;
-  float power_difference = kp / 2 + ki / 20000 + kd * 4 / 3;
+  float power_difference = kp / 8  + ki / 10000 + kd * 3 / 2;
+//  float power_difference = kp / 2 + ki / 20000 + kd * 4 / 3;
   Serial.print("\t");
   Serial.println(power_difference);
   const int max_speed = 100;
@@ -67,28 +71,6 @@ void loop() {
 int Kp =  50;
 int Ki = 25;
 int Kd = 25;  
-
-void pid3(){
-  unsigned int position = qtra.readLine(sensorValues);
-
-  
-  float error = ((int)position) - 2000;
-  error  = error /2;
-  
-  int power_difference = Kp * error + Kd * (error - lastError);
-  lastError = error;
-
-    const int max_speed = 255;
-
-  if (power_difference > max_speed) power_difference = max_speed;
-  if (power_difference < -max_speed) power_difference = -max_speed;
-  if (power_difference < 0)
-    motorMove(max_speed + power_difference, max_speed);
-  else
-    motorMove(max_speed, max_speed - power_difference);  
-  
-  
-}
 
 void pid2(){
   int position = qtra.readLine(sensorValues);
