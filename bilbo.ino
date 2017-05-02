@@ -42,22 +42,20 @@ void setup() {
 void pid1(){
   // put your main code here, to run repeatedly:
   unsigned int position = qtra.readLine(sensorValues);
-
   
   float kp = ((int)position) - 3000;
-  kp = kp/2;
+//  kp = kp/2;
   Serial.print(kp);
   float kd = kp - last_kp;
   ki += kp;
 
-  
-
-
   // Remembering the last position
   last_kp = kp;
 
-  float power_difference = kp / 8  + ki / 10000 + kd * 3 / 2;
+  float power_difference = kp / 20  + ki / 10000 + kd * 3 / 2;
 //  float power_difference = kp / 2 + ki / 20000 + kd * 4 / 3;
+  
+  
   Serial.print("\t");
   Serial.println(power_difference);
   const int max_speed = 100;
