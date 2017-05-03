@@ -44,7 +44,7 @@ void pid1(){
   unsigned int position = qtra.readLine(sensorValues);
   
   float kp = ((int)position) - 3000;
-//  kp = kp/2;
+//    kp = kp/2;
   Serial.print(kp);
   float kd = kp - last_kp;
   ki += kp;
@@ -52,8 +52,10 @@ void pid1(){
   // Remembering the last position
   last_kp = kp;
 
-  float power_difference = kp / 20  + ki / 10000 + kd * 3 / 2;
-//  float power_difference = kp / 2 + ki / 20000 + kd * 4 / 3;
+//  float power_difference = kp / 8 + ki / 10000 + kd * 4 / 2;
+  float power_difference = kp / 20 + ki / 10000 + kd * 3 / 2;
+//  float power_difference = kp / 20  + ki / 10000 + kd * 3/2; // Original
+//  float power_difference = kp / 2 + ki / 20000 + kd * 4 / 3; //com 5 sensores funcionou bem
   
   
   Serial.print("\t");
@@ -62,23 +64,33 @@ void pid1(){
 
   if (power_difference > max_speed) power_difference = max_speed;
   if (power_difference < -max_speed) power_difference = -max_speed;
-  if (power_difference < 0)
+  if (power_difference < 0){
+
     motorMove(max_speed + power_difference, max_speed);
-  else
-    motorMove(max_speed, max_speed - power_difference);  
+  }
+  else{
+    motorMove(max_speed, max_speed - power_difference);
+  }
+//  delay(100);
+//  motorStop();
 }
 
 void loop() {
  pid1(); 
 }
+// funciona para 80 de velocidade
+//int Kp =  50;
+//int Ki = 25;
+//int Kd = 25;  
+
 int Kp =  50;
 int Ki = 25;
 int Kd = 25;  
 
 void pid2(){
-  int position = qtra.readLine(sensorValues);
-//  int error = position;
-  int error = (position - 2000)/1000;
+//  int position = qtra.readLine(sensorValues);
+//  int error = (position - 3000)/1000;
+  int error = readLine();
   Serial.print(error);
   Serial.print("\t");
 
@@ -102,8 +114,8 @@ void pid2(){
 void calibration(){
   digitalWrite(21,1);
   int batteryPcnt = (int)vcc.Read_Perc(VccExpected);
-  motorMove(115, -115);
-  for(int i = 0 ; i < 100 - batteryPcnt ; i++){
+  motorMove(100, -100);
+  for(int i = 0 ; i < 40 ; i++){
     qtra.calibrate();  
   }
 //  delay(20);
@@ -155,11 +167,25 @@ int readLine(){
   int exemples = 1;
   int sv[QUANT_SENSORS];
   int sum;
-  for(int j = 0; j < 4; j++){
-    for(int i = 0; i < 5; i++){
-        sum += analogRead(sensores[i]) > 500 ? 0 : i*1;
+  for(int j = 0; j < 1; j++){
+    for(int i = 0; i < 7; i++){
+        sum   = analogRead(sensores[i]) > 500 ? sum : i*1;
     }
   }
-  return sum/4 - 2;
+  return sum - 3  ;
+}
+
+int readLine2(){
+  if(analogRead(8)<500){
+    return -3;  
+  }else if(analogRead(9) < 500){
+    return -2;
+  }else if(analogRead(10) < 500){
+    return -1; 
+  }else if(analogRead(11) < 500){
+    return 0;  
+  }else if(analogRead(9) < 500){
+    
+  }
 }
 
